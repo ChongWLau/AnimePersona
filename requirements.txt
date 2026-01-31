@@ -4,4 +4,3 @@ supabase
 requests
 matplotlib
 numpy
-jikanpy

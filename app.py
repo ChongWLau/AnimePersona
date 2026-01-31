@@ -2,7 +2,6 @@ import streamlit as st
 from google import genai
 from google.genai import types
 from supabase import create_client, Client
-from jikanpy import Jikan
 import time
 import requests
 import matplotlib.pyplot as plt
@@ -15,7 +14,6 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 client = genai.Client(api_key=GEMINI_KEY)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-jikan = Jikan()
 
 # Streamlit Page Config
 st.set_page_config(page_title="Anime Persona Judge", page_icon="🎴", layout="wide")
