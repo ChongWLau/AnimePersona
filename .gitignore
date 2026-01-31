@@ -1,0 +1,14 @@
+# Streamlit secrets (CRITICAL: Do not leak your API keys)
+.streamlit/
+
+# Python environment/cache
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# MacOS system files
+.DS_Store

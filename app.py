@@ -60,37 +60,37 @@ def fetch_character_data(name):
         "url": "#"
     }
 
-def create_radar_chart(stats, username):
-    labels = np.array(['Wit', 'Depth', 'Grit', 'Whimsy', 'Realism', 'Chaos'])
-    num_vars = len(labels)
+# def create_radar_chart(stats, username):
+#     labels = np.array(['Wit', 'Depth', 'Grit', 'Whimsy', 'Realism', 'Chaos'])
+#     num_vars = len(labels)
     
-    # Split angles for 6 points
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+#     # Split angles for 6 points
+#     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     
-    # Close the loop
-    stats = stats + stats[:1]
-    angles = angles + angles[:1]
+#     # Close the loop
+#     stats = stats + stats[:1]
+#     angles = angles + angles[:1]
 
-    fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
-    ax.fill(angles, stats, color='#FF4B4B', alpha=0.25)
-    ax.plot(angles, stats, color='#FF4B4B', linewidth=2)
+#     fig, ax = plt.subplots(figsize=(4, 4), subplot_kw=dict(polar=True))
+#     ax.fill(angles, stats, color='#FF4B4B', alpha=0.25)
+#     ax.plot(angles, stats, color='#FF4B4B', linewidth=2)
 
-    # Styling the chart for a dark/modern look
-    ax.set_thetagrids(np.degrees(angles[:-1]), labels)
-    for label in ax.get_xticklabels():
-        label.set_fontsize(13)
-        label.set_fontweight('bold')
-        label.set_color('white')
+#     # Styling the chart for a dark/modern look
+#     ax.set_thetagrids(np.degrees(angles[:-1]), labels)
+#     for label in ax.get_xticklabels():
+#         label.set_fontsize(13)
+#         label.set_fontweight('bold')
+#         label.set_color('white')
 
-    ax.set_ylim(0, 100)
-    ax.set_yticklabels([])     # Remove y-axis numbers
+#     ax.set_ylim(0, 100)
+#     ax.set_yticklabels([])     # Remove y-axis numbers
 
-    ax.spines['polar'].set_visible(False)
+#     ax.spines['polar'].set_visible(False)
     
-    # Transparent background for Streamlit
-    fig.patch.set_alpha(0.0)
-    ax.set_facecolor('#0E1117')
-    return fig
+#     # Transparent background for Streamlit
+#     fig.patch.set_alpha(0.0)
+#     ax.set_facecolor('#0E1117')
+#     return fig
 
 # --- TAB 1: SUBMISSION ---
 with tab1:
@@ -108,19 +108,25 @@ with tab1:
         submit_btn = st.form_submit_button("Judge My Taste")
 
     if submit_btn and username and any(titles):
-        with st.spinner("Processing..."):
+        with st.spinner("The Critic is sharpening their pen..."):
             valid_titles = [t for t in titles if t.strip()]
             
+            # --- 1. UPDATED PROMPT (Strict on Formatting) ---
             prompt = f"""
             User: {username}
             List: {', '.join(valid_titles)}
 
             Task:
             1. Provide a 'Taste Score' (0-100).
-            2. What this list says sbout this person.
-            3. Provide a personality snapshot (bullet points).
-            4. Pick the ONE character from these shows that best represents them (Full Name).
-            5. A short 1 sentence brutal roast based on why this character fits.
+            2. COMMENTARY: What this list says about this person (paragraph).
+            3. SNAPSHOT: Provide a personality snapshot as a few plain text bullet points.
+            4. CHARACTER: Pick the ONE character from these shows that best represents them (Full Name).
+            5. ROAST: A short 1 sentence brutal roast based on why this character fits.
+
+            STRICT FORMATTING RULE: 
+            - Return plain text ONLY. 
+            - DO NOT use markdown bolding (**), italics (_), or headers (###).
+            - Use the exact labels below followed by a colon.
 
             Format response:
             SCORE: [number]
@@ -134,59 +140,78 @@ with tab1:
                 model="gemini-3-flash-preview",
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    system_instruction="You are a cynical but accurate anime critic and a bit snarky. Use the user's top 9 to judge them."
+                    system_instruction="You are a cynical, accurate anime critic. You never use markdown formatting like asterisks or bolding in your response labels or content."
                 )
             )
 
             try:
-                # Inside your try block
                 res = response.text
-                score = res.split("SCORE:")[1].split("COMMENTARY:")[0].strip()
-                commentary = res.split("COMMENTARY:")[1].split("SNAPSHOT:")[0].strip()
-                snapshot = res.split("SNAPSHOT:")[1].split("CHARACTER:")[0].strip()
-                char_name = res.split("CHARACTER:")[1].split("ROAST:")[0].strip()
-                roast = res.split("ROAST:")[1].strip()
+                # --- 2. CLEANING FUNCTION ---
+                def clean_text(text):
+                    return text.replace("**", "").replace("__", "").replace("*", "").strip()
 
-                # 2. Fetch Verified Image from Jikan
-                jikan_data = fetch_character_data(char_name)
+                # --- 3. ROBUST PARSING ---
+                score_raw = res.split("SCORE:")[1].split("COMMENTARY:")[0]
+                score = clean_text(score_raw)
 
-                # Save to Supabase
+                commentary_raw = res.split("COMMENTARY:")[1].split("SNAPSHOT:")[0]
+                commentary = clean_text(commentary_raw)
+
+                snapshot_raw = res.split("SNAPSHOT:")[1].split("CHARACTER:")[0]
+                snapshot = clean_text(snapshot_raw)
+
+                char_name_raw = res.split("CHARACTER:")[1].split("ROAST:")[0]
+                char_name = clean_text(char_name_raw)
+
+                roast_raw = res.split("ROAST:")[1]
+                roast = clean_text(roast_raw)
+
+                # --- 4. FETCH JIKAN DATA (With Clean Name) ---
+                # We also remove anything in parentheses like "(Steins;Gate)" so Jikan doesn't get confused
+                search_name = char_name.split("(")[0].strip()
+                jikan_data = fetch_character_data(search_name)
+
+                # --- 5. SAVE TO DATABASE ---
                 db_entry = {
                     "username": username,
                     "anime_list": ", ".join(valid_titles),
                     "score": int(score) if score.isdigit() else 0,
                     "commentary": commentary,
                     "snapshot": snapshot,
-                    "spirit_character": char_name,
+                    "spirit_character": char_name, # Keeps full name for display
                     "roast_text": roast,
                     "character_image_url": jikan_data['image']
                 }
                 supabase.table("anime_list").insert(db_entry).execute()
-                st.success("Analysis saved!")
-
-                # 4. Immediate Feedback
+                
+                # --- 6. UI FEEDBACK ---
                 st.balloons()
                 st.divider()
                 res_col1, res_col2 = st.columns([1, 2])
+                
                 with res_col1:
-                    st.image(jikan_data['image'])
-                    st.markdown(f"[View {char_name} on MAL]({jikan_data['url']})")
-                    st.subheader(f"You are: {char_name}")
-                    st.info(roast)
+                    st.image(jikan_data['image'], width="stretch")
+                    st.caption(f"Spirit Character: {char_name}")
+                    st.info(f"🔥 {roast}")
+                    st.markdown(f"🔗 [View on MyAnimeList]({jikan_data['url']})")
+                
                 with res_col2:
-                    st.header(f"Score: {score}/100")
-                    st.subheader("What Your Taste Says About You:")
+                    st.header(f"Taste Score: {score}/100")
+                    st.markdown("### 📝 The Breakdown")
                     st.write(commentary)
-                    st.subheader("Personality Snapshot:")
+                    
+                    st.markdown("### 👤 Snapshot")
+                    # Clean up the bullet points for Streamlit display
                     for point in snapshot.split("\n"):
-                        if point.strip():
-                            st.markdown(f"* {point.strip().lstrip('-• ')}")
-                    
-                    
+                        p = clean_text(point).lstrip("-• 123456789. ")
+                        if p:
+                            st.markdown(f"* {p}")
 
             except Exception as e:
-                st.error("Data parsing error. Please try again!")
-                st.write(response.text)
+                st.error("The Judge's handwriting was too messy to read (Parsing Error). Please try again!")
+                with st.expander("Debug Raw Response"):
+                    st.write(res)
+                    st.write(f"Error: {e}")
 
 # --- TAB 2: LEADERBOARD ---
 with tab2:
@@ -209,9 +234,9 @@ with tab2:
                     st.markdown(f"<h2 style='text-align: center;'>{pod_labels[idx]}</h2>", unsafe_allow_html=True)
                     st.markdown(f"<h3 style='text-align: center;'>{entry['username']}</h3>", unsafe_allow_html=True)
                     st.image(entry['character_image_url'], width="stretch")
-                    st.metric("Score", f"{entry['score']}/100")
                     st.caption(f"Spirit: {entry['spirit_character']}")
                     st.write(f"_{entry['roast_text']}_")
+                    st.metric("Taste Score", f"{entry['score']}/100")
                     
                     # List of anime moved into the expander as bullet points
                     with st.expander("View Top 9"):
@@ -229,10 +254,10 @@ with tab2:
                 with other_cols[idx % 4]:
                     with st.container(border=True):
                         st.markdown(f"### **{entry['username']}**")
-                        st.write(f"**Score: {entry['score']}/100**")
                         st.image(entry['character_image_url'], width="stretch")
                         st.caption(f"Spirit: {entry['spirit_character']}")
                         st.info(entry['roast_text'])
+                        st.metric("Taste Score", f"{entry['score']}/100")
                         
                         # List of anime moved into the expander as bullet points
                         with st.expander("View Top 9"):
