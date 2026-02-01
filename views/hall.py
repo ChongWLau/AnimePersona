@@ -22,7 +22,7 @@ def show_hall_of_fame(supabase):
                     st.markdown(f"<h3 style='text-align: center;'>{entry['username']}</h3>", unsafe_allow_html=True)
                     st.image(entry['character_image_url'], width="stretch")
                     st.caption(f"Spirit: {entry['spirit_character']}")
-                    st.write(f"_{entry['roast_text']}_")
+                    st.info(f"_{entry['roast_text']}_")
                     st.metric("Taste Score", f"{entry['score']}/100")
                     
                     # List of anime moved into the expander as bullet points

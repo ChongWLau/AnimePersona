@@ -1,6 +1,6 @@
-import streamlit as st
 import requests
 import time
+import re
 
 
 def fetch_verified_character(char_name, source_anime):
@@ -55,6 +55,12 @@ def fetch_verified_character(char_name, source_anime):
 
 def clean_text(text):
     return text.replace("**", "").replace("__", "").replace("*", "").strip()
+
+
+def strip_list_markers(text):
+    """Removes '1.', '2.', and other list artifacts from AI responses."""
+    # Removes numbers like "1. ", bullets like "- ", or "• " from the start
+    return re.sub(r'^(\d+\.|\-|\•)\s*', '', text.strip())
 
 
 # def create_radar_chart(stats, username):
