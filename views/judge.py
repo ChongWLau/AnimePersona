@@ -118,7 +118,12 @@ def save_complete_profile(supabase, username, titles, exp_data, psych_data, roas
 
 def show_judge_tab(supabase, genai_client):
     # --- Developer Test Mode Logic ---
-    test_mode = st.sidebar.toggle("🛠️ Developer Test Mode")
+    is_dev_url = st.query_params.get("dev") == "true"
+
+    test_mode = False
+    if is_dev_url:
+        # Only show the toggle if the secret URL is used
+        test_mode = st.sidebar.toggle("🛠️ Developer Test Mode")
     test_data = {
         "user": "CWLau2",
         "anime": ["Steins;Gate", "Yakitate Japan", "Hajime no Ippo", "Code Geass", "Naruto", 
