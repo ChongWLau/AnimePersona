@@ -25,10 +25,9 @@ def show_lookup_tab(supabase):
             with col_img:
                 st.image(user_data['character_image_url'], width='stretch')
                 st.caption(f"Archetype: {user_data['spirit_character']}")
-                st.error(f"**🔥 THE ROAST:** {user_data['roast_text']}")
-
             with col_main:
                 st.title(f"Score: {user_data['score']}/100")
+                st.error(f"**🔥 THE ROAST:** {user_data['roast_text']}")
                 st.subheader("Verdict")
                 st.write(user_data.get('connoisseur_verdict', 'N/A'))
 
