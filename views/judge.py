@@ -47,12 +47,17 @@ def get_psychological_profile(genai_client, analysis_dict, titles):
     1. CORE ARCHETYPE: 3-sentence clinical summary of their primary personality.
     2. THE SHADOW: Analysis of traits they mask or repress (their "darker" side).
     3. SOCIAL DYNAMICS: How they relate to others and the compatibility types they vibe with.
-    4. SPIRIT_CHARACTER: Pick ANY anime character (does not have to be from their list) that perfectly matches their Archetype. 
+    4. SPIRIT_CHARACTER: Pick ANY anime character that perfectly matches their Archetype.
        Format: Name (Anime)
-    5. SHADOW_CHARACTER: Pick ANY anime character (does not have to be from their list) that perfectly matches their 'Shadow' side. 
+    5. SHADOW_CHARACTER: Pick ANY anime character that matches their 'Shadow' side.
        Format: Name (Anime)
 
-    CRITICAL: Do NOT use numbers or bullet points.
+    CRITICAL CONSTRAINTS:
+    - DO NOT select Light Yagami (Death Note). He is an overused cliché.
+    - Seek a character that specifically mirrors the unique nuances of THE SHADOW analysis above.
+    - Think outside of the most mainstream 'edgy' characters to find a precise psychological fit.
+    - Do NOT use numbers or bullet points.
+
     Format EXACTLY as:
     CORE ARCHETYPE: [text]
     THE SHADOW: [text]
