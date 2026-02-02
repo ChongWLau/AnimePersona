@@ -6,6 +6,7 @@ from supabase import create_client, Client
 from views.hall import show_hall_of_fame
 from views.judge import show_judge_tab
 from views.lookup import show_lookup_tab
+from views.stats import show_stats_tab
 
 # --- 1. INITIALIZATION ---
 GEMINI_KEY = st.secrets["GEMINI_API_KEY"]
@@ -29,7 +30,7 @@ st.markdown("""
 
 st.title("🎴 Anime Persona")
 
-tab1, tab2, tab3 = st.tabs(["🔥 Get Judged", "🏆 Hall of Fame", "🔍 Find Result"])
+tab1, tab2, tab3, tab4 = st.tabs(["🔥 Get Judged", "🏆 Hall of Fame", "🔍 Find Result", "📊 Global Stats"])
 
 with tab1:
     show_judge_tab(supabase, client)
@@ -37,3 +38,5 @@ with tab2:
     show_hall_of_fame(supabase)
 with tab3:
     show_lookup_tab(supabase)
+with tab4:
+    show_stats_tab(supabase)

@@ -4,3 +4,5 @@ supabase
 requests
 matplotlib
 numpy
+pandas
+plotly
