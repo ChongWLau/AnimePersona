@@ -5,52 +5,57 @@ import re
 
 def fetch_verified_character(char_name, source_anime):
     """
-    1. Search for the character name broadly.
-    2. Fetch the top 5 results.
-    3. For each result, check their 'anime' list for the source_anime.
+    Surgical Fetch:
+    1. Search for the specific anime first to get its ID.
+    2. Fetch the full character list for that anime ID.
+    3. Match the character name within that specific show's cast.
+    4. Fallback to broad search only if the anime-specific lookup fails.
     """
     try:
-        # Step 1: Broad Search for the Character
-        search_url = f"https://api.jikan.moe/v4/characters?q={char_name}&limit=5"
-        time.sleep(1) # Rate limit protection
-        search_res = requests.get(search_url).json()
+        # Step 1: Search for the Anime to get its MAL ID
+        anime_url = f"https://api.jikan.moe/v4/anime?q={source_anime}&limit=1"
+        time.sleep(1) # Respect Jikan rate limits
+        anime_res = requests.get(anime_url).json()
         
-        results = search_res.get('data', [])
-        if not results:
-            return {"image": "https://placehold.co/400x600?text=No+Character+Found", "url": "#"}
-
-        # Step 2: Manually filter the top 5
-        for entry in results:
-            char_id = entry['mal_id']
+        if anime_res.get('data'):
+            anime_id = anime_res['data'][0]['mal_id']
             
-            # Fetch this specific character's anime appearances
-            appearances_url = f"https://api.jikan.moe/v4/characters/{char_id}/anime"
-            time.sleep(1) # Respect the 1-second rule
-            app_res = requests.get(appearances_url).json()
+            # Step 2: Fetch characters for that specific anime
+            char_url = f"https://api.jikan.moe/v4/anime/{anime_id}/characters"
+            time.sleep(1)
+            char_res = requests.get(char_url).json()
             
-            # Step 3: Check if source_anime is in their history
-            # We use fuzzy matching (.lower() and 'in') to catch partial titles
-            for appearance in app_res.get('data', []):
-                anime_title = appearance['anime']['title'].lower()
-                if source_anime.lower() in anime_title or anime_title in source_anime.lower():
-                    # Match found! Use this image.
-                    images = entry.get('images', {}).get('jpg', {})
+            # Step 3: Match the name in this specific show's cast
+            for entry in char_res.get('data', []):
+                # MAL names are often "Last, First" -> change to "Last First" for matching
+                mal_name = entry['character']['name'].lower().replace(",", "")
+                target_parts = char_name.lower().split()
+                
+                # Check if all parts of the target name exist in the MAL name
+                if all(part in mal_name for part in target_parts):
+                    images = entry['character'].get('images', {}).get('jpg', {})
                     return {
                         "image": images.get('large_image_url') or images.get('image_url'),
-                        "url": entry.get('url', '#')
+                        "url": entry['character'].get('url', '#')
                     }
-                    
-        # Fallback: If no match in the top 5, just use the first result
-        first_char = results[0]
-        images = first_char.get('images', {}).get('jpg', {})
-        return {
-            "image": images.get('large_image_url') or images.get('image_url'),
-            "url": first_char.get('url', '#')
-        }
+
+        # Step 4: Fallback Broad Search
+        search_url = f"https://api.jikan.moe/v4/characters?q={char_name}&limit=3"
+        time.sleep(1)
+        fallback_res = requests.get(search_url).json()
+        
+        if fallback_res.get('data'):
+            top_result = fallback_res['data'][0]
+            images = top_result.get('images', {}).get('jpg', {})
+            return {
+                "image": images.get('large_image_url') or images.get('image_url'),
+                "url": top_result.get('url', '#')
+            }
 
     except Exception as e:
         print(f"Fetch Error: {e}")
-        return {"image": "https://placehold.co/400x600?text=Spirit+Not+Found", "url": "#"}
+    
+    return {"image": "https://placehold.co/400x600?text=Character+Not+Found", "url": "#"}
 
 
 def clean_text(text):
